@@ -1,28 +1,31 @@
 # cPanel Fix Permission
 
-[![Version](https://img.shields.io/badge/version-0.2-blue.svg)](https://github.com/nocturnalismee/cpanel-fix-permission)
+[![Version](https://img.shields.io/badge/version-0.1-blue.svg)](https://github.com/nocturnalismee/cpanel-fix-permission)
 [![License](https://img.shields.io/badge/license-GPLv3-green.svg)](LICENSE)
 
-A simple bash script to fix permissions and ownership of files/folders in cPanel accounts. This script helps server administrators quickly resolve permission issues in cPanel accounts.
+A powerful and secure bash script to fix permissions and ownership of files/folders in cPanel accounts. This script helps server administrators quickly resolve permission issues in cPanel accounts with enhanced security features.
 
-## Features
+## ✨ Features
 
 - ✅ Automatic file and folder permission fixes
 - ✅ Support for single and multiple users
+- ✅ Process all cPanel accounts with single command
 - ✅ Security validation to prevent path traversal
 - ✅ Timeout for long-running operations
-- ✅ Informative logging
-- ✅ Progress indicator
+- ✅ Informative logging with color-coded output
+- ✅ Progress indicator with spinner
 - ✅ CageFS support
+- ✅ Input validation and sanitization
 
-## Requirements
+## 📋 Requirements
 
 - Linux/Unix operating system
 - cPanel/WHM installation
 - Root access
 - Bash shell
+- `realpath` command (usually pre-installed)
 
-## Installation
+## 🚀 Installation
 
 1. Download the script:
 
@@ -36,7 +39,7 @@ wget https://raw.githubusercontent.com/nocturnalismee/cpanel-fix-permission/main
 chmod +x cpanelfixperm.sh
 ```
 
-## Usage
+## 💻 Usage
 
 ### Available Options
 
@@ -48,6 +51,7 @@ Available options:
 
 - `-h, --help` : Display help information
 - `-v, --version` : Display script version
+- `-a, --all` : Fix all cPanel accounts
 
 ### Usage Examples
 
@@ -66,21 +70,23 @@ Available options:
 3. Fix all cPanel accounts in WHM:
 
 ```bash
-for i in `ls -A /var/cpanel/users` ; do ./cpanelfixperm.sh $i ; done
+./cpanelfixperm.sh -a
 ```
 
-## Permission Settings
+## 🔒 Permission Settings
 
 The script will set the following permissions:
 
-- Home directory: 711 (rwx--x--x)
-- Files: 644 (rw-r--r--)
-- Directories: 755 (rwxr-xr-x)
-- CGI scripts: 755 (rwxr-xr-x)
-- public_html: 750 (rwxr-x---)
-- CageFS directories: 771/700 (as needed)
+| Path/File Type     | Permission | Description |
+| ------------------ | ---------- | ----------- |
+| Home directory     | 711        | rwx--x--x   |
+| Files              | 644        | rw-r--r--   |
+| Directories        | 755        | rwxr-xr-x   |
+| CGI scripts        | 755        | rwxr-xr-x   |
+| public_html        | 750        | rwxr-x---   |
+| CageFS directories | 771/700    | As needed   |
 
-## Logging
+## 📝 Logging
 
 The script will save logs to:
 
@@ -94,15 +100,23 @@ Log format:
 [timestamp] [LEVEL] message
 ```
 
-## Security
+Log levels:
 
-- Username input validation
-- Path traversal prevention
-- Timeout for long-running operations
+- INFO: Green color
+- WARN: Yellow color
+- ERROR: Red color
+
+## 🛡️ Security Features
+
+- Username input validation using regex pattern
+- Path traversal prevention using realpath
+- Timeout for long-running operations (default: 300 seconds)
 - Home directory validation
 - Root privileges check
+- Secure command execution
+- Error handling with trap
 
-## Troubleshooting
+## 🔍 Troubleshooting
 
 If you encounter issues:
 
@@ -110,12 +124,14 @@ If you encounter issues:
 2. Check the log file for error details
 3. Verify the username is valid
 4. Check server connectivity
+5. Ensure all required commands are available
+6. Check disk space availability
 
-## Contributing
+## 🤝 Contributing
 
 Feel free to submit pull requests. For major changes, please open an issue first to discuss what you would like to change.
 
-## License
+## 📄 License
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
@@ -129,10 +145,14 @@ Key points of GPL v3.0:
 - You must state significant changes made to the software
 - You must make the source code available
 
-## Author
+## 👤 Author
 
 - nocturnalismee
 
-## Support
+## 💬 Support
 
 If you find any bugs or have suggestions, please open an issue in the GitHub repository.
+
+## ⚠️ Disclaimer
+
+This script is provided "as is", without warranty of any kind. Always backup your data before running any system administration scripts.
