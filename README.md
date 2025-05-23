@@ -156,3 +156,8 @@ If you find any bugs or have suggestions, please open an issue in the GitHub rep
 ## ⚠️ Disclaimer
 
 This script is provided "as is", without warranty of any kind. Always backup your data before running any system administration scripts.
+
+### Reference for this script bash
+
+- [PeachFlame/cPanel-fixperms](https://github.com/PeachFlame/cPanel-fixperms)
+- [thecpaneladmin](https://www.thecpaneladmin.com/fix-account-permissions/)
