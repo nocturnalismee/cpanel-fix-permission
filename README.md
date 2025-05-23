@@ -1,7 +1,7 @@
 # cPanel Fix Permission
 
 [![Version](https://img.shields.io/badge/version-0.2-blue.svg)](https://github.com/nocturnalismee/cpanel-fix-permission)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPLv3-green.svg)](LICENSE)
 
 A simple bash script to fix permissions and ownership of files/folders in cPanel accounts. This script helps server administrators quickly resolve permission issues in cPanel accounts.
 
@@ -117,7 +117,17 @@ Feel free to submit pull requests. For major changes, please open an issue first
 
 ## License
 
-[MIT License](LICENSE)
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+The GNU General Public License is a free, copyleft license that ensures the software remains free and open source. This license is particularly suitable for system administration tools and security-related software.
+
+Key points of GPL v3.0:
+
+- You are free to use, modify, and distribute the software
+- Any modifications must be released under the same license
+- You must include the original copyright notice
+- You must state significant changes made to the software
+- You must make the source code available
 
 ## Author
 
