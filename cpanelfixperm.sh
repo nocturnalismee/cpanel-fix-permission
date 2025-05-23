@@ -47,11 +47,12 @@ show_help() {
     echo "Option:"
     echo "  -h, --help     Show this help message"
     echo "  -v, --version  Show version of script"
+    echo "  -a, --all      Fix all cPanel accounts"
     echo
     echo "Example:"
     echo "  $SCRIPT_NAME usernameA              # Fix 1 cPanel account"
     echo "  $SCRIPT_NAME usernameA usernameB    # Fix several cPanel accounts"
-    echo "  for i in \`ls -A /var/cpanel/users\` ; do $SCRIPT_NAME \$i ; done  # Fix all cPanel accounts"
+    echo "  $SCRIPT_NAME -a                     # Fix all cPanel accounts"
     echo
     echo "Log file: $LOG_FILE"
 }
@@ -199,6 +200,13 @@ main() {
             ;;
         -v|--version)
             echo "Version: 0.2"
+            exit 0
+            ;;
+        -a|--all)
+            log_message "INFO" "Processing all cPanel accounts"
+            for user in $(ls -A /var/cpanel/users); do
+                process_user "$user"
+            done
             exit 0
             ;;
     esac
