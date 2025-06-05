@@ -9,7 +9,7 @@
 
 # Constants
 readonly SCRIPT_NAME=$(basename "$0")
-readonly LOG_FILE="/etc/tmp/cpanel-fix-permission.log"
+readonly LOG_FILE="/tmp/cpanel-fix-permission.log"
 readonly TIMEOUT_DURATION=300
 readonly VALID_USERNAME_PATTERN='^[a-zA-Z0-9_]+$'
 
