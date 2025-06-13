@@ -91,7 +91,7 @@ The script will set the following permissions:
 The script will save logs to:
 
 ```
-/etc/tmp/cpanel-fix-permission.log
+cpanel-fix-permission.log
 ```
 
 Log format:
