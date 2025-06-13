@@ -7,19 +7,18 @@
 # of files and folders on cPanel account
 # ==============================================
 
-# Constants
 readonly SCRIPT_NAME=$(basename "$0")
-readonly LOG_FILE="/tmp/cpanel-fix-permission.log"
+readonly LOG_FILE="cpanel-fix-permission.log"
 readonly TIMEOUT_DURATION=300
 readonly VALID_USERNAME_PATTERN='^[a-zA-Z0-9_]+$'
 
-# Color for output
+# Color
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly NC='\033[0m' # No Color
 
-# Function to show message
+# Show message
 log_message() {
     local level=$1
     local message=$2
@@ -40,7 +39,7 @@ log_message() {
     echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
 }
 
-# Function to show help
+# Show Help
 show_help() {
     echo "Usage: $SCRIPT_NAME [option] username1 [username2 ...]"
     echo
@@ -57,15 +56,12 @@ show_help() {
     echo "Log file: $LOG_FILE"
 }
 
-# Function to timeout
+# Set timeout
 timeout_command() {
     local timeout=$1
-    local command=$2
-    local pid
-    
-    $command &
-    pid=$!
-    
+    shift
+    "$@" &
+    local pid=$!
     (
         sleep $timeout
         if kill -0 $pid 2>/dev/null; then
@@ -74,12 +70,11 @@ timeout_command() {
             exit 1
         fi
     ) &
-    
     wait $pid
     return $?
 }
 
-# Function to validate path
+# Validate path
 validate_path() {
     local path=$1
     local base_path=$2
@@ -95,7 +90,7 @@ validate_path() {
     return 0
 }
 
-# Function to show progress
+# Show progress
 spinner() {
     local pid=$1
     local delay=0.1
@@ -110,7 +105,7 @@ spinner() {
     printf "    \b\b\b\b"
 }
 
-# Function to process one user
+# Process one user
 process_user() {
     local user=$1
     local HOMEDIR=$(egrep "^${user}:" /etc/passwd | cut -d: -f6)
@@ -135,7 +130,7 @@ process_user() {
         return 1
     fi
     
-    # Process change permission
+    # Change permission
     log_message "INFO" "Setting ownership for user $user"
     timeout_command $TIMEOUT_DURATION "chown -R $user:$user $HOMEDIR"
     chmod 711 $HOMEDIR
@@ -146,19 +141,19 @@ process_user() {
     log_message "INFO" "Setting permission for user $user"
     
     echo -n "Setting permission file to 644..."
-    timeout_command $TIMEOUT_DURATION "find $HOMEDIR -type f -exec chmod 644 {} \;" & spinner $!
+    timeout_command $TIMEOUT_DURATION find "$HOMEDIR" -type f -exec chmod 644 {} \; & spinner $!
     echo " Done."
     
     echo -n "Setting permission directory to 755..."
-    timeout_command $TIMEOUT_DURATION "find $HOMEDIR -type d -exec chmod 755 {} \;" & spinner $!
+    timeout_command $TIMEOUT_DURATION find "$HOMEDIR" -type d -exec chmod 755 {} \; & spinner $!
     echo " Done."
     
     echo -n "Setting permission cgi-bin to 755..."
-    timeout_command $TIMEOUT_DURATION "find $HOMEDIR -type d -name cgi-bin -exec chmod 755 {} \;" & spinner $!
+    timeout_command $TIMEOUT_DURATION find "$HOMEDIR" -type d -name cgi-bin -exec chmod 755 {} \; & spinner $!
     echo " Done."
     
     echo -n "Setting permission script to 755..."
-    timeout_command $TIMEOUT_DURATION "find $HOMEDIR -type f \( -name \"*.pl\" -o -name \"*.perl\" \) -exec chmod 755 {} \;" & spinner $!
+    timeout_command $TIMEOUT_DURATION find "$HOMEDIR" -type f \( -name "*.pl" -o -name "*.perl" \) -exec chmod 755 {} \; & spinner $!
     echo " Done."
     
     # Process public_html
