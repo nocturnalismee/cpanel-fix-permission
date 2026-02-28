@@ -131,19 +131,6 @@ If you encounter issues:
 
 Feel free to submit pull requests. For major changes, please open an issue first to discuss what you would like to change.
 
-## 📄 License
-
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
-
-The GNU General Public License is a free, copyleft license that ensures the software remains free and open source. This license is particularly suitable for system administration tools and security-related software.
-
-Key points of GPL v3.0:
-
-- You are free to use, modify, and distribute the software
-- Any modifications must be released under the same license
-- You must include the original copyright notice
-- You must state significant changes made to the software
-- You must make the source code available
 
 ## 👤 Author
 
