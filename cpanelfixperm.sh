@@ -1,10 +1,10 @@
 #!/bin/bash
 # ==============================================
 # cPanel Fix Permission Script
-# Version: 0.3 (Optimized & Patched)
-# Author: nocturnalismee (Updated via Analysis)
+# Version: 0.4
+# Author: nocturnalismee
 # Script to fix permission and ownership of files and folders on cPanel account
-set -euo pipefail  # Exit on error, undefined variables, and pipe failures
+set -euo pipefail
 
 readonly SCRIPT_NAME=$(basename "$0")
 readonly LOG_FILE="cpanel-fix-permission.log"
@@ -24,7 +24,7 @@ log_message() {
     local level="$1"
     local message="$2"
     local timestamp
-    timestamp=$(date '+%Y-%m-%d %H:%M:%S')  # FIX: dipisah agar exit code tidak tertutupi (SC2155)
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
 
     case "$level" in
         "INFO")  printf "${GREEN}[INFO]${NC} %s\n"  "$message" ;;
@@ -32,7 +32,8 @@ log_message() {
         "ERROR") printf "${RED}[ERROR]${NC} %s\n"   "$message" ;;
     esac
 
-    printf "[%s] [%s] %s\n" "$timestamp" "$level" "$message" >> "$LOG_FILE"
+    # Prevent script exit if log file/directory is unwritable
+    printf "[%s] [%s] %s\n" "$timestamp" "$level" "$message" >> "$LOG_FILE" 2>/dev/null || true
 }
 
 # Show Help
@@ -69,24 +70,24 @@ run_with_spinner() {
     while kill -0 "$pid" 2>/dev/null; do
         local temp="${spinstr#?}"
         printf "[%c]" "$spinstr"
-        spinstr="${temp}${spinstr%"$temp"}"  # FIX: hapus 'local' duplikat di dalam loop (SC2041)
+        spinstr="${temp}${spinstr%"$temp"}"
         sleep "$delay"
         printf "\b\b\b"
     done
 
-    # Wait for the background process to finish and get its exit code
-    wait "$pid"
-    local exit_status=$?
+    # Wait for the background process to finish and capture its exit code safely
+    local exit_status=0
+    wait "$pid" || exit_status=$?
 
     # Clear spinner and print result
     if [ "$exit_status" -eq 0 ]; then
-        printf " \b\b${GREEN}Done.${NC}\n"
+        printf " \b${GREEN}Done.${NC}\n"
         return 0
     elif [ "$exit_status" -eq 124 ]; then
-        printf " \b\b${RED}Timeout.${NC}\n"
+        printf " \b${RED}Timeout.${NC}\n"
         return 124
     else
-        printf " \b\b${RED}Failed.${NC}\n"
+        printf " \b${RED}Failed.${NC}\n"
         return "$exit_status"
     fi
 }
@@ -124,11 +125,12 @@ get_additional_domains() {
     local user="$1"
     local userdata_dir="$CPANEL_USERDATA_DIR/$user"
     local domains=()
+    local basename_file
+    local docroot
 
     if [ ! -d "$userdata_dir" ]; then return 0; fi
 
     while IFS= read -r -d '' config_file; do
-        local basename_file
         basename_file=$(basename "$config_file")
 
         if [[ "$basename_file" == "main" ]] || [[ "$basename_file" == *"cache"* ]]; then
@@ -136,10 +138,10 @@ get_additional_domains() {
         fi
 
         if [ -f "$config_file" ]; then
-            local docroot
-            docroot=$(grep "^documentroot:" "$config_file" 2>/dev/null | head -n1 | cut -d: -f2- | tr -d ' ')
+            # Add || true to prevent set -eo pipefail from exiting if grep finds nothing
+            docroot=$(grep "^documentroot:" "$config_file" 2>/dev/null | head -n1 | cut -d: -f2- | tr -d ' ' || true)
 
-            if [ -n "$docroot" ] && [ -d "$docroot" ]; then  # FIX: tambah spasi sebelum [
+            if [ -n "$docroot" ] && [ -d "$docroot" ]; then
                 domains+=("$docroot")
             fi
         fi
@@ -155,19 +157,19 @@ process_additional_domains() {
     local user="$1"
     local HOMEDIR="$2"
     local BASE_HOMEDIR
-    BASE_HOMEDIR=$(dirname "$HOMEDIR")  # FIX: dipisah agar exit code tidak tertutupi (SC2155)
+    BASE_HOMEDIR=$(dirname "$HOMEDIR")
 
     log_message "INFO" "Checking for subdomains and addon domains for user: $user"
 
     local additional_domains
     additional_domains=$(get_additional_domains "$user")
 
-    if [ -z "$additional_domains" ]; then return 0; fi  # FIX: tambah spasi sebelum [
+    if [ -z "$additional_domains" ]; then return 0; fi
 
     while IFS= read -r domain_path; do
         [ -z "$domain_path" ] && continue
 
-        if [ -d "$domain_path" ]; then  # FIX: tambah spasi sebelum [
+        if [ -d "$domain_path" ]; then
             log_message "INFO" "Processing domain directory: $domain_path"
 
             if validate_path "$domain_path" "$BASE_HOMEDIR"; then
@@ -185,8 +187,8 @@ process_additional_domains() {
                 fi
 
                 # Setup specific root ownership & permission for domain
-                chmod 750 "$domain_path" 2>/dev/null
-                chown "$user:nobody" "$domain_path" 2>/dev/null
+                chmod 750 "$domain_path" 2>/dev/null || true
+                chown "$user:nobody" "$domain_path" 2>/dev/null || true
 
             else
                 log_message "WARN" "Skipping invalid path: $domain_path"
@@ -212,15 +214,16 @@ process_user() {
         return 1
     fi
 
-    HOMEDIR=$(grep "^${user}:" /etc/passwd 2>/dev/null | cut -d: -f6)
+    # Add || true to prevent set -eo pipefail from exiting if grep finds nothing
+    HOMEDIR=$(grep "^${user}:" /etc/passwd 2>/dev/null | cut -d: -f6 || true)
 
-    if [ -z "$HOMEDIR" ] || [ ! -d "$HOMEDIR" ]; then  # FIX: tambah spasi sebelum [
+    if [ -z "$HOMEDIR" ] || [ ! -d "$HOMEDIR" ]; then
         log_message "ERROR" "Home directory invalid or missing for: $user"
         return 1
     fi
 
     local BASE_HOMEDIR
-    BASE_HOMEDIR=$(dirname "$HOMEDIR")  # FIX: dipisah agar exit code tidak tertutupi (SC2155)
+    BASE_HOMEDIR=$(dirname "$HOMEDIR")
     if ! validate_path "$HOMEDIR" "$BASE_HOMEDIR"; then
         log_message "ERROR" "Home directory structure is restricted for user: $user"
         return 1
@@ -231,21 +234,28 @@ process_user() {
     timeout "$TIMEOUT_DURATION" chown -R "$user:$user" "$HOMEDIR" 2>/dev/null \
         || log_message "WARN" "Complete chown took too long or had permission blocks"
 
-    chmod 711 "$HOMEDIR" 2>/dev/null
+    chmod 711 "$HOMEDIR" 2>/dev/null || true
 
     # 2. Fix Mail, SSL, and Specific System Dirs that require different groups
     log_message "INFO" "Restoring specific cPanel directories ownership"
-    # FIX: perintah yang tergabung dalam 1 baris tanpa separator dipecah per baris
-    [ -d "$HOMEDIR/public_html" ] && chown "$user:nobody" "$HOMEDIR/public_html" 2>/dev/null || true
-    [ -d "$HOMEDIR/public_ftp" ]  && chown "$user:nobody" "$HOMEDIR/public_ftp"  2>/dev/null || true
-    [ -d "$HOMEDIR/.htpasswds" ]  && chown -R "$user:nobody" "$HOMEDIR/.htpasswds" 2>/dev/null \
-        && chmod 750 "$HOMEDIR/.htpasswds" 2>/dev/null || true
+    
+    # Refactored && || true into explicit if statements for readability and set -e safety
+    if [ -d "$HOMEDIR/public_html" ]; then
+        chown "$user:nobody" "$HOMEDIR/public_html" 2>/dev/null || true
+    fi
+    if [ -d "$HOMEDIR/public_ftp" ]; then
+        chown "$user:nobody" "$HOMEDIR/public_ftp"  2>/dev/null || true
+    fi
+    if [ -d "$HOMEDIR/.htpasswds" ]; then
+        chown -R "$user:nobody" "$HOMEDIR/.htpasswds" 2>/dev/null || true
+        chmod 750 "$HOMEDIR/.htpasswds" 2>/dev/null || true
+    fi
 
     # Ensure Mail directories are assigned to mail group to prevent Webmail breakdown
-    if [ -d "$HOMEDIR/mail" ]; then  # FIX: tambah spasi sebelum [
+    if [ -d "$HOMEDIR/mail" ]; then
         chown -R "$user:mail" "$HOMEDIR/mail" 2>/dev/null || true
     fi
-    if [ -d "$HOMEDIR/etc" ]; then   # FIX: tambah spasi sebelum [
+    if [ -d "$HOMEDIR/etc" ]; then
         chown -R "$user:mail" "$HOMEDIR/etc" 2>/dev/null || true
     fi
 
@@ -265,7 +275,7 @@ process_user() {
 
     # Restore public_html to 750 (Must be done AFTER the bulk find command above)
     if [ -d "$HOMEDIR/public_html" ]; then
-        chmod 750 "$HOMEDIR/public_html" 2>/dev/null
+        chmod 750 "$HOMEDIR/public_html" 2>/dev/null || true
     fi
 
     # 4. Additional Domains
@@ -274,11 +284,17 @@ process_user() {
     # 5. CageFS specific fixes
     if [ -d "$HOMEDIR/.cagefs" ]; then
         log_message "INFO" "Applying .cagefs permissions"
-        chmod 771 "$HOMEDIR/.cagefs" 2>/dev/null
-        # FIX: perintah yang tergabung dalam 1 baris tanpa separator dipecah per baris
-        [ -d "$HOMEDIR/.cagefs/tmp" ] && chmod 700 "$HOMEDIR/.cagefs/tmp" 2>/dev/null || true
-        [ -d "$HOMEDIR/.cagefs/var" ] && chmod 700 "$HOMEDIR/.cagefs/var" 2>/dev/null || true
-        [ -d "$HOMEDIR/.cagefs/opt" ] && chmod 700 "$HOMEDIR/.cagefs/opt" 2>/dev/null || true
+        chmod 771 "$HOMEDIR/.cagefs" 2>/dev/null || true
+        
+        if [ -d "$HOMEDIR/.cagefs/tmp" ]; then
+            chmod 700 "$HOMEDIR/.cagefs/tmp" 2>/dev/null || true
+        fi
+        if [ -d "$HOMEDIR/.cagefs/var" ]; then
+            chmod 700 "$HOMEDIR/.cagefs/var" 2>/dev/null || true
+        fi
+        if [ -d "$HOMEDIR/.cagefs/opt" ]; then
+            chmod 700 "$HOMEDIR/.cagefs/opt" 2>/dev/null || true
+        fi
     fi
 
     log_message "INFO" "Finished processing user: $user"
@@ -288,12 +304,12 @@ process_user() {
 
 # Main script
 main() {
-    if [ "$EUID" -ne 0 ]; then   # FIX: tambah spasi sebelum [
+    if [ "$EUID" -ne 0 ]; then
         log_message "ERROR" "Script must be run as root"
         exit 1
     fi
 
-    if [ ! -d "$CPANEL_USER_DIR" ]; then  # FIX: tambah spasi sebelum [
+    if [ ! -d "$CPANEL_USER_DIR" ]; then
         log_message "ERROR" "cPanel installation not found."
         exit 1
     fi
@@ -315,7 +331,7 @@ main() {
             exit 0
             ;;
         -v|--version)
-            echo "Version: 0.3 (Optimized)"
+            echo "Version: 0.4 (Hardened & Optimized)"
             exit 0
             ;;
         -a|--all)
@@ -323,9 +339,9 @@ main() {
             local user_count=0
             local success_count=0
             local fail_count=0
+            local user
 
             while IFS= read -r -d '' user_file; do
-                local user
                 user=$(basename "$user_file")
                 (( user_count++ )) || true
 
@@ -357,6 +373,6 @@ main() {
 }
 
 # Trap for clean error handling
-trap 'log_message "ERROR" "Script interrupted or error on line $LINENO"' ERR INT TERM
+trap 'trap - ERR INT TERM; log_message "ERROR" "Script interrupted or error on line $LINENO"; exit 1' ERR INT TERM
 
 main "$@"
